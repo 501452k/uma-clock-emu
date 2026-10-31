@@ -53,6 +53,20 @@ const verifiedGateStartDelay = Object.freeze({
 
 const reportedUnsupportedSkillIds = new Set();
 
+// Retain only effects the single-runner emulator can calculate. This check
+// also applies to saved/imported skill IDs, not just the visible skill menu.
+const supportedSimulationTypes = new Set([
+  "passive", "heal", "speed", "acceleration", "composite",
+  "gate", "decel", "fatigue", "unique",
+]);
+
+function isSimulatableSkill(skill) {
+  return Boolean(skill && supportedSimulationTypes.has(skill.type) &&
+    (skill.rarity !== "evo" ||
+      (!scenarioEvolutionIds.has(skill.id) && skill.holder != null)));
+}
+
+
 const inheritMap = {
   heal: {
     750: 350,
@@ -359,7 +373,7 @@ export default {
         }
         // 분류가 정의되지 않은 스킬은 화면 전체를 중단시키지 않고 제외합니다.
         // 제외된 스킬은 계산에 반영되지 않으므로 별도 매핑이 필요합니다.
-        if (!ret[skill.type] || !ret[skill.type][section]) {
+        if (!isSimulatableSkill(skill) || !ret[skill.type] || !ret[skill.type][section]) {
           // Never silently recast an unknown effect as speed/acceleration.
           if (!reportedUnsupportedSkillIds.has(skill.id)) {
             reportedUnsupportedSkillIds.add(skill.id);
@@ -427,7 +441,11 @@ export default {
       for (const type of this.types) {
         for (const section of this.raritySections) {
           for (const id of this.hasSkills[type][section]) {
-            hasSkills.push(this.skills[idMap.indexOf(id)]);
+            const skill = this.skills[idMap.indexOf(id)];
+            if (isSimulatableSkill(skill) && skill.type === type &&
+                this.toRaritySection(skill.rarity) === section) {
+              hasSkills.push(skill);
+            }
           }
         }
       }
@@ -440,7 +458,7 @@ export default {
       }
       for (const evoSkillId of this.hasEvoSkills) {
         const evoSkill = this.skills[idMap.indexOf(evoSkillId)];
-        if (uq && evoSkill.holder === uq.holder) {
+        if (uq && isSimulatableSkill(evoSkill) && evoSkill.holder === uq.holder) {
           hasSkills.push(evoSkill);
         }
       }
