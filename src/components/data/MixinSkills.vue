@@ -320,6 +320,19 @@ export default {
         if (!skill.type) {
           console.error("No type:", JSON.stringify(skill));
         }
+        // 분류가 정의되지 않은 스킬은 화면 전체를 중단시키지 않고 제외합니다.
+        // 제외된 스킬은 계산에 반영되지 않으므로 별도 매핑이 필요합니다.
+        if (!ret[skill.type] || !ret[skill.type][section]) {
+          console.warn(
+            "Unsupported skill classification:",
+            skill.id,
+            skill.name,
+            skill.type,
+            section
+          );
+          continue;
+        }
+
         ret[skill.type][section].push(skill);
       }
       return ret;
