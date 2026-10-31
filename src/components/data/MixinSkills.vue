@@ -457,7 +457,8 @@ export default {
       for (const evoSkillId of this.hasEvoSkills) {
         const evoSkill = this.skills[idMap.indexOf(evoSkillId)];
         if (isSimulatableSkill(evoSkill) &&
-            (scenarioEvolutionIds.has(evoSkill.id) ||
+            (this.masinAllowAnyEvo === true ||
+              scenarioEvolutionIds.has(evoSkill.id) ||
               (uq && evoSkill.holder === uq.holder))) {
           hasSkills.push(evoSkill);
         }
