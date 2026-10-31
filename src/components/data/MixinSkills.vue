@@ -158,44 +158,26 @@ export default {
     };
   },
   computed: {
-
-  normalSkillData() {
-    const origin = JSON.parse(
-      JSON.stringify(SkillData.normalSkillData)
-    );
-  
-    for (const skillWrapper of origin) {
-      for (const variant of skillWrapper.variants) {
-        const jaName = variant.name_ja || variant.name;
-        const key = `skill.${jaName}`;
-  
-        variant.name = this.$te(key)
-          ? this.$t(key)
-          : jaName;
+    normalSkillData() {
+      const origin = JSON.parse(JSON.stringify(SkillData.normalSkillData));
+      for (const skillWrapper of origin) {
+        for (const variant of skillWrapper.variants) {
+          const jaName = variant.name_ja || variant.name;
+          const key = `skill.${jaName}`;
+          variant.name = this.$te(key) ? this.$t(key) : jaName;
+        }
       }
-    }
-  
-    return origin;
-  },
-  
-  uniqueSkillData() {
-    const origin = JSON.parse(
-      JSON.stringify(SkillData.uniqueSkillData)
-    );
-  
-    for (const skill of origin) {
-      const jaName = skill.name_ja || skill.name;
-      const key = `skill.${jaName}`;
-  
-      skill.name = this.$te(key)
-        ? this.$t(key)
-        : jaName;
-    }
-  
-    return origin.sort((a, b) =>
-      a.name.localeCompare(b.name, "ko")
-    );
-  },
+      return origin;
+    },
+    uniqueSkillData() {
+      const origin = JSON.parse(JSON.stringify(SkillData.uniqueSkillData));
+      for (const skill of origin) {
+        const jaName = skill.name_ja || skill.name;
+        const key = `skill.${jaName}`;
+        skill.name = this.$te(key) ? this.$t(key) : jaName;
+      }
+      return origin.sort((a, b) => a.name.localeCompare(b.name, "ko"));
+    },
     filteredUniqueSkillData() {
       if (this.uniqueSkillFilterQuery === "") {
         return this.uniqueSkillData;
