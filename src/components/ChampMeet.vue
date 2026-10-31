@@ -308,6 +308,7 @@
       </el-collapse>
       <br />
       <ExecuteBlock ref="executeBlock" :exec-function="this.exec" />
+      <masin-panel :simulator="this" />
     </el-form>
     <el-divider />
     <Adsense
@@ -401,11 +402,13 @@ import ReleaseNote from "@/components/ReleaseNote";
 import CalculatedValues from "@/components/CalculatedValues";
 import ChartHint from "./ChartHint";
 import ExecuteBlock from "./ExecuteBlock";
+import MasinPanel from "@/masin/MasinPanel";
 
 export default {
   name: "ChampMeet",
   components: {
     ExecuteBlock,
+    MasinPanel,
     ChartHint,
     CalculatedValues,
     ReleaseNote,
