@@ -35,6 +35,24 @@ const inheritedEffectOverrides = {
   120481: { acceleration: null },
 };
 
+// These skills are scenario evolutions (not character-specific evolutions).
+// The simulator currently offers only character-specific evolution skills.
+const scenarioEvolutionIds = new Set(
+  [407011, 407021, 407031, 407041, 407051, 407061, 407071, 408011, 408021, 408031, 408041, 408051, 408061, 409011, 409021, 409031, 409041, 409051, 409061, 410011, 410021, 410031, 410041, 410051, 410061, 411011, 411021, 411031, 411041, 411051, 411061, 412011, 412021, 412031, 412041, 412051, 413011, 413021, 413031, 413041, 413051]
+);
+
+// Track unsupported IDs without repeating the same warning on every reactive update.
+// Gate effect type 10 (Gametora raw values 4000, 9000, 15000).
+// Coefficients are validated against the original legacy skillData.js.
+// The generator currently drops this effect and marks all three as unknown.
+const verifiedGateStartDelay = Object.freeze({
+  200431: 0.4,  // Concentration
+  200432: 0.9,  // Focus
+  200433: 1.5,  // Gatekept (negative skill)
+});
+
+const reportedUnsupportedSkillIds = new Set();
+
 const inheritMap = {
   heal: {
     750: 350,
@@ -273,8 +291,13 @@ export default {
 
         // 進化スキルはエミュ種類以外では無条件で表示
         if (skill.rarity === "evo") {
+          if (scenarioEvolutionIds.has(skill.id)) {
+            // Scenario skills are not owned by the currently selected character.
+            continue;
+          }
           if (skill.holder == null) {
-            console.error(`No holder in ${JSON.stringify(skill)}`);
+            console.warn("Unlinked character evolution:", skill.id, skill.name);
+            continue;
           }
           if (skill.holder === uqHolder) {
             ret.evo.push(skill);
@@ -337,13 +360,11 @@ export default {
         // 분류가 정의되지 않은 스킬은 화면 전체를 중단시키지 않고 제외합니다.
         // 제외된 스킬은 계산에 반영되지 않으므로 별도 매핑이 필요합니다.
         if (!ret[skill.type] || !ret[skill.type][section]) {
-          console.warn(
-            "Unsupported skill classification:",
-            skill.id,
-            skill.name,
-            skill.type,
-            section
-          );
+          // Never silently recast an unknown effect as speed/acceleration.
+          if (!reportedUnsupportedSkillIds.has(skill.id)) {
+            reportedUnsupportedSkillIds.add(skill.id);
+            console.warn("Unsupported effect (excluded from simulation):", skill.id, skill.name, skill.type, section);
+          }
           continue;
         }
 
@@ -472,6 +493,9 @@ export default {
     checkCondition(skill, cond, value) {
       const thiz = this;
       switch (cond) {
+        case "always":
+          // Generated DB uses always==1 for unconditional gate effects.
+          return () => Number(value) === 1;
         case "motivation":
           return parseInt(value) === 5 - +thiz.umaStatus.condition;
         case "hp_per":
@@ -1365,6 +1389,13 @@ export default {
         const { variants, ...commonPart } = skillWrapper;
         for (const variant of variants) {
           const copy = { ...commonPart, ...variant };
+          if (Object.prototype.hasOwnProperty.call(verifiedGateStartDelay, copy.id)) {
+            // All three have an always==1 condition. Do not apply generic
+            // unknown-effect fallback; startDelay is already modeled by
+            // triggerStartSkills() in the legacy engine.
+            copy.type = "gate";
+            copy.startDelay = verifiedGateStartDelay[copy.id];
+          }
           skills.push(this.reshapeSkill(copy));
         }
       }
