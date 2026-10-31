@@ -19,6 +19,22 @@ const effects = [
   "startDelay",
 ];
 
+// Verified against local Gametora export: inherited-skill effect values.
+// null = the original effect is NOT present in the inherited variant.
+// These exceptions must not be replaced with guessed global coefficients.
+const inheritedEffectOverrides = {
+  110351: { targetSpeed: 0.05 },
+  101201: { targetSpeed: 0.15 },
+  110211: { targetSpeed: 0.05 },
+  110441: { heal: -200 },
+  111101: { targetSpeed: 0.25 },
+  110321: { acceleration: 0.025 },
+  110491: { targetSpeed: -0.25 },
+  100981: { targetSpeed: 0.05, acceleration: null },
+  110741: { targetSpeed: -0.15 },
+  120481: { acceleration: null },
+};
+
 const inheritMap = {
   heal: {
     750: 350,
@@ -78,34 +94,42 @@ function toInheritValues(invoke) {
 }
 
 function rewriteInheritValues(inherit) {
+  const originalId = inherit.id;
+  const overrides = inheritedEffectOverrides[originalId] || {};
   const variant = {
-    id: inherit.id + 800000,
+    id: originalId + 800000,
     name: inherit.name,
     rarity: "inherit",
   };
+
   if (inherit.duration) {
     inherit.duration = inherit.duration * 0.6;
   }
+
   for (const effect of effects) {
-    if (inherit[effect] && inheritMap[effect]) {
-      const map = inheritMap[effect];
-      const value = inherit[effect];
-      let newValue = map[value];
-      if (newValue == null) {
-        console.error(
-          `Unknown ${effect} value ${value} in ${JSON.stringify(inherit)}`
-        );
-      }
-      variant[effect] = newValue;
+    if (!inherit[effect] || !inheritMap[effect]) continue;
+
+    const hasOverride = Object.prototype.hasOwnProperty.call(overrides, effect);
+    const value = hasOverride ? overrides[effect] : inheritMap[effect][inherit[effect]];
+
+    if (hasOverride && value === null) {
+      // The original skill has this effect but its inherited form does not.
       delete inherit[effect];
+      continue;
     }
+    if (value == null) {
+      // Unsupported conversion: do not create a property with undefined.
+      console.warn("Unverified inherited effect; excluded:", originalId, effect, inherit[effect]);
+      delete inherit[effect];
+      continue;
+    }
+
+    variant[effect] = value;
+    delete inherit[effect];
   }
 
   if (inherit.invokes) {
-    variant.invokes = [];
-    for (let i in inherit.invokes) {
-      variant.invokes[i] = toInheritValues(inherit.invokes[i]);
-    }
+    variant.invokes = inherit.invokes.map((invoke) => toInheritValues(invoke));
     delete inherit.invokes;
   }
 
