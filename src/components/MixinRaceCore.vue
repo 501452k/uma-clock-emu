@@ -1179,11 +1179,21 @@ export default {
       const idMap = this.skills.map((x) => x.id);
       for (const id of u.hasSkillIds ?? []) {
         const skill = this.skills[idMap.indexOf(id)];
+        if (!skill || (!this.types.includes(skill.type) && skill.rarity !== "evo")) {
+          // Old presets can contain deleted or deliberately unsupported skills.
+          continue;
+        }
         if (skill.rarity === "evo") {
-          this.hasEvoSkills.push(id);
+          // Only character-owned evolutions can be selected by this simulator.
+          if (skill.holder != null &&
+              skill.holder === this.skills[idMap.indexOf(u.selectedUnique)]?.holder) {
+            this.hasEvoSkills.push(id);
+          }
         } else {
           const section = this.toRaritySection(skill.rarity);
-          this.hasSkills[skill.type][section].push(id);
+          if (this.hasSkills[skill.type]?.[section]) {
+            this.hasSkills[skill.type][section].push(id);
+          }
         }
       }
 
