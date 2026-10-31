@@ -158,36 +158,44 @@ export default {
     };
   },
   computed: {
-    normalSkillData() {
-      // Deep clone to avoid mutating module cache
-      const origin = JSON.parse(JSON.stringify(SkillData.normalSkillData));
-      
-      const locale = this.$i18n.locale;
-      for (const skillWrapper of origin) {
-        for (const variant of skillWrapper.variants) {
-          if (locale === "zh" && variant.name_zh) variant.name = variant.name_zh;
-          else if (locale === "en" && variant.name_en) variant.name = variant.name_en;
-          else variant.name = variant.name_ja || variant.name;
-        }
+
+  normalSkillData() {
+    const origin = JSON.parse(
+      JSON.stringify(SkillData.normalSkillData)
+    );
+  
+    for (const skillWrapper of origin) {
+      for (const variant of skillWrapper.variants) {
+        const jaName = variant.name_ja || variant.name;
+        const key = `skill.${jaName}`;
+  
+        variant.name = this.$te(key)
+          ? this.$t(key)
+          : jaName;
       }
-      return origin;
-    },
-    uniqueSkillData() {
-      const origin = JSON.parse(JSON.stringify(SkillData.uniqueSkillData));
-      const locale = this.$i18n.locale;
-      
-      for (const skill of origin) {
-        if (locale === "zh" && skill.name_zh) skill.name = skill.name_zh;
-        else if (locale === "en" && skill.name_en) skill.name = skill.name_en;
-        else skill.name = skill.name_ja || skill.name;
-      }
-      
-      return origin.sort((a, b) => {
-        if (a.name < b.name) return -1;
-        if (a.name > b.name) return 1;
-        return 0;
-      });
-    },
+    }
+  
+    return origin;
+  },
+  
+  uniqueSkillData() {
+    const origin = JSON.parse(
+      JSON.stringify(SkillData.uniqueSkillData)
+    );
+  
+    for (const skill of origin) {
+      const jaName = skill.name_ja || skill.name;
+      const key = `skill.${jaName}`;
+  
+      skill.name = this.$te(key)
+        ? this.$t(key)
+        : jaName;
+    }
+  
+    return origin.sort((a, b) =>
+      a.name.localeCompare(b.name, "ko")
+    );
+  },
     filteredUniqueSkillData() {
       if (this.uniqueSkillFilterQuery === "") {
         return this.uniqueSkillData;
