@@ -1,7 +1,7 @@
 <template>
   <section class="masin-panel">
     <h2>마신표 계산</h2>
-    <p class="notice">현재 코스·각질에서 계산 가능한 스킬만 비교합니다. 상대 주자 디버프·시야·위치 이동 및 미지원 진화 스킬은 제외됩니다.</p>
+    <p class="notice">현재 코스·각질에서 계산 가능한 스킬만 비교합니다. 상대 주자 디버프·시야·위치 이동 및 계산할 수 없는 진화 스킬만 제외됩니다.</p>
     <el-form :inline="true" @submit.native.prevent>
       <el-form-item label="스킬 ID (쉼표 구분, 최대 30개)">
         <el-input v-model="skillIds" placeholder="예: 201082, 200431" style="width:290px" />

@@ -20,10 +20,11 @@ function findSupportedSkill(vm,id) {
   const list = Array.isArray(vm.skills)?vm.skills:[];
   const skill = list.find(x=>x.id===id);
   if (!skill)throw Error('Skill ID not present in legacy engine: '+id);
-  if (skill.type==='unique'||skill.rarity==='unique'||skill.rarity==='evo'||skill.type==='systematic')
-    throw Error('Unique/evolved/systematic skill selection is not covered by this adapter');
+  if (skill.type==='unique'||skill.rarity==='unique'||skill.type==='systematic')
+    throw Error('Unique/systematic skill selection is not covered by this adapter');
   if (!Array.isArray(vm.types)||!vm.types.includes(skill.type))throw Error('Unsupported engine skill type: '+skill.type);
   if (typeof vm.toRaritySection !== 'function')throw Error('Missing toRaritySection()');
+  if (skill.rarity === 'evo') return {skill,section:null,isEvolution:true};
   const section=vm.toRaritySection(skill.rarity);
   if (!(skill.type in vm.hasSkills)||!(section in vm.hasSkills[skill.type]))
     throw Error('Invalid legacy skill group: '+skill.type+'/'+section);
@@ -37,7 +38,15 @@ function emptyAllSkills(vm) {
 }
 function oneRace(vm, skillSelection, seed, originalRandom) {
   emptyAllSkills(vm);
-  if (skillSelection) vm.hasSkills[skillSelection.skill.type][skillSelection.section].push(skillSelection.skill.id);
+  vm.masinAllowAnyEvo=false;
+  if (skillSelection) {
+    if (skillSelection.isEvolution) {
+      vm.masinAllowAnyEvo=true;
+      vm.hasEvoSkills=[skillSelection.skill.id];
+    } else {
+      vm.hasSkills[skillSelection.skill.type][skillSelection.section].push(skillSelection.skill.id);
+    }
+  }
   vm.emulations=[];
   vm.maxEpoch=2; // Prevent goal()->updateChart() because epoch stays zero.
   vm.$refs.executeBlock.epoch=0;
@@ -62,7 +71,8 @@ function runPairedComparison(vm, skillId, options={}) {
   const originalRandom=Math.random;
   const snapshot={
     hasSkills:JSON.parse(JSON.stringify(vm.hasSkills)), selectedUnique:vm.selectedUnique,
-    hasEvoSkills:[...vm.hasEvoSkills], emulations:vm.emulations,
+    hasEvoSkills:[...vm.hasEvoSkills], masinAllowAnyEvo:vm.masinAllowAnyEvo,
+    umaStatus:JSON.parse(JSON.stringify(vm.umaStatus)), emulations:vm.emulations,
     maxEpoch:vm.maxEpoch, epoch:ctl.epoch, skillActivateAdjustment:ctl.skillActivateAdjustment
   };
   const results=[];
@@ -81,7 +91,8 @@ function runPairedComparison(vm, skillId, options={}) {
   } finally {
     Math.random=originalRandom;
     vm.hasSkills=snapshot.hasSkills;vm.selectedUnique=snapshot.selectedUnique;
-    vm.hasEvoSkills=snapshot.hasEvoSkills;vm.emulations=snapshot.emulations;
+    vm.hasEvoSkills=snapshot.hasEvoSkills;vm.masinAllowAnyEvo=snapshot.masinAllowAnyEvo;
+    vm.umaStatus=snapshot.umaStatus;vm.emulations=snapshot.emulations;
     vm.maxEpoch=snapshot.maxEpoch;ctl.epoch=snapshot.epoch;
     ctl.skillActivateAdjustment=snapshot.skillActivateAdjustment;
   }

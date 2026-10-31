@@ -1,5 +1,6 @@
 'use strict';
 const {runPairedComparison} = require('./paired_runner');
+const SCENARIO_EVOLUTION_IDS = new Set([407011, 407021, 407031, 407041, 407051, 407061, 407071, 408011, 408021, 408031, 408041, 408051, 408061, 409011, 409021, 409031, 409041, 409051, 409061, 410011, 410021, 410031, 410041, 410051, 410061, 411011, 411021, 411031, 411041, 411051, 411061, 412011, 412021, 412031, 412041, 412051, 413011, 413021, 413031, 413041, 413051]);
 
 function parseSkillIds(text) {
   const parts = String(text).split(/[\s,;，]+/).filter(Boolean);
@@ -24,10 +25,19 @@ function compareSkillTable(vm, idText, options={}) {
   if (!available || typeof available!=='object') throw Error('스킬 선택 목록을 읽을 수 없습니다.');
   const validIds=new Set();
   for (const [type, groups] of Object.entries(available)) {
-    if (type==='evo') continue; // No scenario/evolution skills in mashin table.
+    if (type==='evo') continue; // Add all simulatable evolutions separately below.
     if (!groups || typeof groups!=='object') continue;
     for (const group of Object.values(groups)) {
       if (Array.isArray(group)) group.forEach(skill=>validIds.add(skill.id));
+    }
+  }
+  // The normal UI limits character evolutions by selected character.
+  // The mashin table compares any supported evolution without its unique skill.
+  const supportedTypes = new Set(Array.isArray(vm.types) ? vm.types : []);
+  for (const skill of (Array.isArray(vm.skills) ? vm.skills : [])) {
+    if (skill.rarity === 'evo' && supportedTypes.has(skill.type) &&
+        (skill.holder != null || SCENARIO_EVOLUTION_IDS.has(skill.id))) {
+      validIds.add(skill.id);
     }
   }
   for (const id of ids) if (!validIds.has(id)) throw Error('현재 코스·각질에서 선택 불가능하거나 제외된 스킬: '+id);
