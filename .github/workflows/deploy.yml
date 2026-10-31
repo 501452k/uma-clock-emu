@@ -33,8 +33,8 @@ jobs:
 
       - name: Build website
         env:
+          NODE_OPTIONS: --openssl-legacy-provider
           PUBLIC_URL: /${{ github.event.repository.name }}/
-        run: npx vue-cli-service build --mode production --dest dist --publicPath "/${{ github.event.repository.name }}/"
 
       - name: Upload website
         uses: actions/upload-pages-artifact@v3
