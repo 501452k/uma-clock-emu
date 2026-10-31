@@ -36,7 +36,8 @@ const inheritedEffectOverrides = {
 };
 
 // These skills are scenario evolutions (not character-specific evolutions).
-// The simulator currently offers only character-specific evolution skills.
+// Scenario evolutions are selectable separately from character-specific evolutions.
+// Only supported effect types are included in the simulation.
 const scenarioEvolutionIds = new Set(
   [407011, 407021, 407031, 407041, 407051, 407061, 407071, 408011, 408021, 408031, 408041, 408051, 408061, 409011, 409021, 409031, 409041, 409051, 409061, 410011, 410021, 410031, 410041, 410051, 410061, 411011, 411021, 411031, 411041, 411051, 411061, 412011, 412021, 412031, 412041, 412051, 413011, 413021, 413031, 413041, 413051]
 );
@@ -63,7 +64,7 @@ const supportedSimulationTypes = new Set([
 function isSimulatableSkill(skill) {
   return Boolean(skill && supportedSimulationTypes.has(skill.type) &&
     (skill.rarity !== "evo" ||
-      (!scenarioEvolutionIds.has(skill.id) && skill.holder != null)));
+      scenarioEvolutionIds.has(skill.id) || skill.holder != null));
 }
 
 
@@ -305,15 +306,12 @@ export default {
 
         // 進化スキルはエミュ種類以外では無条件で表示
         if (skill.rarity === "evo") {
-          if (scenarioEvolutionIds.has(skill.id)) {
-            // Scenario skills are not owned by the currently selected character.
-            continue;
-          }
-          if (skill.holder == null) {
-            console.warn("Unlinked character evolution:", skill.id, skill.name);
-            continue;
-          }
-          if (skill.holder === uqHolder) {
+          // Scenario evolutions have no character holder; they are selectable
+          // regardless of the currently selected character. Reject only effects
+          // that the current single-runner engine cannot calculate.
+          if (!isSimulatableSkill(skill)) continue;
+          if (scenarioEvolutionIds.has(skill.id) ||
+              (uqHolder != null && skill.holder === uqHolder)) {
             ret.evo.push(skill);
           }
           continue;
@@ -458,7 +456,9 @@ export default {
       }
       for (const evoSkillId of this.hasEvoSkills) {
         const evoSkill = this.skills[idMap.indexOf(evoSkillId)];
-        if (uq && isSimulatableSkill(evoSkill) && evoSkill.holder === uq.holder) {
+        if (isSimulatableSkill(evoSkill) &&
+            (scenarioEvolutionIds.has(evoSkill.id) ||
+              (uq && evoSkill.holder === uq.holder))) {
           hasSkills.push(evoSkill);
         }
       }
